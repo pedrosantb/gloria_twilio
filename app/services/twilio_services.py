@@ -29,8 +29,8 @@ class Twilio:
                 from_=PHONE_NUMBER,
                 to=client_phone
             )
-
-        if not message.status == 'sent':
+        # print(message.status)
+        if not message.status:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error sending twilio SMS"
