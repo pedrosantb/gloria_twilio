@@ -5,7 +5,7 @@ from .database import Base
 
 class Orders(Base):
     """
-    Database model used for User class
+    Database model used for Orders class
     """
     __tablename__ = "orders"
 
