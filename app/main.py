@@ -9,7 +9,11 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+import models.models as models
+from models.database import SessionLocal, engine
 from routers.webhooks import webhook_router
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="GloriaFoods - Twilio Integration"

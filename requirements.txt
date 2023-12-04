@@ -3,3 +3,5 @@ python-dotenv
 requests
 uvicorn
 twilio
+sqlalchemy
+psycopg2-binary

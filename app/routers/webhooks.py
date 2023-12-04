@@ -1,44 +1,59 @@
 '''
 WebHook listener routes
 '''
-from fastapi import FastAPI, APIRouter, Request, status
-# from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, Request, status, Depends
+from sqlalchemy.orm import Session
+
 from services.twilio_services import Twilio
+import services.global_services as service
 
 webhook_router = APIRouter(prefix="/webhook")
 
 @webhook_router.post("/gloriaListener")
-async def gloria_listener(request: Request):
-    # data_raw_json = await request.json()
-    # order_details = data_raw_json["orders"][0]
+async def gloria_listener(request: Request, db: Session = Depends(service.get_db)):
+    data_raw_json = await request.json()
+    order_details = data_raw_json["orders"][0]
 
-    # client_phone = order_details['client_phone']
-    # client_first_name = order_details['client_first_name']
-    # order_type = order_details['type']
-    # order_status = order_details['status']
+    order = await service.get_order(db, id=order_details['id'])
+    
+    if not order:
+        create_status = await service.create_order(db, order_details)
+        if not create_status:
+            return status.HTTP_500_INTERNAL_SERVER_ERROR
+        order = await service.get_order(db, id=order_details['id'])
+        message_body = f'Hello, {order.first_name}. Your order at Juice Guys is {order.status}'
+    else:
+        if order.status != 'accepted':
+            return status.HTTP_200_OK
+        message_body = f'Hello, {order.first_name}. Your order at Juice Guys is ready to pickup'
 
-    # message_body = f'Hello, {client_first_name}. Your order at Juice Guys is {order_status}'
+    sms_client = Twilio()
+    sms_status = await sms_client.send_message(order.phone_number, message_body)
+    print(sms_status)
 
-    # sms_client = Twilio()
-    # sms_status = await sms_client.send_message(client_phone, message_body)
-    # print(sms_status)
     return status.HTTP_200_OK
 
 
 @webhook_router.get("/gloriaListener")
-async def gloria_listener_get(request: Request):
+async def gloria_listener_get(request: Request, db: Session = Depends(service.get_db)):
     data_raw_json = await request.json()
     order_details = data_raw_json["orders"][0]
 
-    client_phone = order_details['client_phone']
-    client_first_name = order_details['client_first_name']
-    order_type = order_details['type']
-    order_status = order_details['status']
-
-    message_body = f'Hello, {client_first_name}. Your order at Juice Guys is {order_status}'
-    print(order_status)
+    order = await service.get_order(db, id=order_details['id'])
     
+    if not order:
+        create_status = await service.create_order(db, order_details)
+        if not create_status:
+            return status.HTTP_500_INTERNAL_SERVER_ERROR
+        order = await service.get_order(db, id=order_details['id'])
+        message_body = f'Hello, {order.first_name}. Your order at Juice Guys is {order.status}'
+    else:
+        if order.status != 'accepted':
+            return status.HTTP_200_OK
+        message_body = f'Hello, {order.first_name}. Your order at Juice Guys is ready to pickup'
+
     sms_client = Twilio()
-    sms_status = await sms_client.send_message(client_phone, message_body)
+    sms_status = await sms_client.send_message(order.phone_number, message_body)
     print(sms_status)
+
     return status.HTTP_200_OK
